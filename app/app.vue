@@ -2,6 +2,7 @@
   <div class="game">
     <h1>🐍 Color Snake</h1>
     <p class="score">Score: {{ score }}</p>
+    <p class="highscore">🏆 Highscore: {{ highScore }}</p>
 
     <!-- Spielfeld -->
     <div
@@ -46,6 +47,7 @@
     <div v-if="gameOver" class="overlay">
       <h2>💀 Game Over</h2>
       <p>Final Score: {{ score }}</p>
+      <p>🏆 Highscore: {{ highScore }}</p>
       <button @click="restart">🔁 Restart</button>
     </div>
   </div>
@@ -61,12 +63,12 @@ export default {
       food: { x: 10, y: 10 },
       specialFood: null,
       score: 0,
+      highScore: 0,
       combo: 0,
       speed: 120,
       minSpeed: 60,
       gameOver: false,
       loop: null,
-
       touchStartX: 0,
       touchStartY: 0,
     };
@@ -74,17 +76,25 @@ export default {
 
   methods: {
     spawnFood() {
+      // Normales Food
       let x, y;
       do {
         x = Math.floor(Math.random() * this.fieldSize);
         y = Math.floor(Math.random() * this.fieldSize);
       } while (this.snake.some((s) => s.x === x && s.y === y));
-
       this.food = { x, y };
 
       // ⭐ 20% Chance Special Food
       if (Math.random() < 0.2) {
-        this.specialFood = { x, y };
+        let sx, sy;
+        do {
+          sx = Math.floor(Math.random() * this.fieldSize);
+          sy = Math.floor(Math.random() * this.fieldSize);
+        } while (
+          this.snake.some((s) => s.x === sx && s.y === sy) ||
+          (sx === x && sy === y)
+        );
+        this.specialFood = { x: sx, y: sy };
       } else {
         this.specialFood = null;
       }
@@ -110,34 +120,44 @@ export default {
       ) {
         this.gameOver = true;
         clearInterval(this.loop);
+
+        // Highscore speichern
+        if (this.score > this.highScore) {
+          this.highScore = this.score;
+          localStorage.setItem("colorSnakeHighscore", this.highScore);
+        }
         return;
       }
 
       this.snake.push(head);
 
       // 🍎 Food Check
+      let ateFood = false;
       if (head.x === this.food.x && head.y === this.food.y) {
+        ateFood = true;
         this.combo++;
         let points = 1 + this.combo;
-
-        // ⭐ Special Bonus
-        if (
-          this.specialFood &&
-          head.x === this.specialFood.x &&
-          head.y === this.specialFood.y
-        ) {
-          points += 5;
-        }
-
         this.score += points;
+      }
 
-        // ⚡ schneller werden
+      // ⭐ Special Food Check
+      if (
+        this.specialFood &&
+        head.x === this.specialFood.x &&
+        head.y === this.specialFood.y
+      ) {
+        this.score += 5; // Bonuspunkte
+        this.specialFood = null;
+        ateFood = true;
+      }
+
+      if (ateFood) {
+        // ⚡ Geschwindigkeit erhöhen
         if (this.speed > this.minSpeed) {
           this.speed -= 3;
           clearInterval(this.loop);
           this.loop = setInterval(this.moveSnake, this.speed);
         }
-
         this.spawnFood();
       } else {
         this.combo = 0;
@@ -152,6 +172,10 @@ export default {
       this.combo = 0;
       this.speed = 120;
       this.gameOver = false;
+
+      // Highscore laden
+      const savedHighscore = localStorage.getItem("colorSnakeHighscore");
+      if (savedHighscore) this.highScore = parseInt(savedHighscore);
 
       this.spawnFood();
 
@@ -203,7 +227,6 @@ export default {
     snakeStyle(index) {
       const segment = this.snake[index];
       const hue = (index * 25 + this.score * 10) % 360;
-
       return {
         top: segment.y * 20 + "px",
         left: segment.x * 20 + "px",
@@ -261,7 +284,8 @@ h1 {
   -webkit-text-fill-color: transparent;
 }
 
-.score {
+.score,
+.highscore {
   font-size: 1.2rem;
   opacity: 0.8;
 }
