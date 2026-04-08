@@ -3,7 +3,13 @@
     <h1>🐍 Color Snake</h1>
     <p class="score">Score: {{ score }}</p>
 
-    <div class="field">
+    <!-- Spielfeld -->
+    <div
+      class="field"
+      @touchstart="handleTouchStart"
+      @touchend="handleTouchEnd"
+      @touchmove.prevent
+    >
       <!-- Snake -->
       <div
         v-for="(segment, index) in snake"
@@ -16,6 +22,17 @@
       <div class="food" :style="foodStyle"></div>
     </div>
 
+    <!-- Mobile Steuerung Buttons -->
+    <div class="controls">
+      <button @click="setDirection('up')">⬆️</button>
+      <div>
+        <button @click="setDirection('left')">⬅️</button>
+        <button @click="setDirection('down')">⬇️</button>
+        <button @click="setDirection('right')">➡️</button>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
     <div v-if="gameOver" class="overlay">
       <h2>💀 Game Over</h2>
       <p>Final Score: {{ score }}</p>
@@ -35,6 +52,10 @@ export default {
       score: 0,
       gameOver: false,
       loop: null,
+
+      // Mobile Swipe
+      touchStartX: 0,
+      touchStartY: 0,
     };
   },
 
@@ -100,6 +121,40 @@ export default {
         this.direction = "left";
       if (e.key === "ArrowRight" && this.direction !== "left")
         this.direction = "right";
+    },
+
+    // Touch Start
+    handleTouchStart(e) {
+      this.touchStartX = e.touches[0].clientX;
+      this.touchStartY = e.touches[0].clientY;
+    },
+
+    // Swipe erkennen
+    handleTouchEnd(e) {
+      const dx = e.changedTouches[0].clientX - this.touchStartX;
+      const dy = e.changedTouches[0].clientY - this.touchStartY;
+      const threshold = 20;
+
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+        if (dx > 0 && this.direction !== "left") this.direction = "right";
+        if (dx < 0 && this.direction !== "right") this.direction = "left";
+      } else if (Math.abs(dy) > threshold) {
+        if (dy > 0 && this.direction !== "up") this.direction = "down";
+        if (dy < 0 && this.direction !== "down") this.direction = "up";
+      }
+    },
+
+    // Buttons setzen
+    setDirection(dir) {
+      // verhindert 180° Wende
+      if (
+        (dir === "up" && this.direction !== "down") ||
+        (dir === "down" && this.direction !== "up") ||
+        (dir === "left" && this.direction !== "right") ||
+        (dir === "right" && this.direction !== "left")
+      ) {
+        this.direction = dir;
+      }
     },
 
     snakeStyle(index) {
@@ -180,6 +235,7 @@ h1 {
   background-size: 20px 20px;
   box-shadow: 0 0 25px #00f5ff44;
   overflow: hidden;
+  touch-action: none;
 }
 
 .snake-segment {
@@ -208,10 +264,23 @@ button {
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 0 10px #ff00c8aa;
+  margin: 5px;
 }
 
 button:hover {
   transform: scale(1.05);
+}
+
+/* Mobile Steuerung Buttons */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+}
+.controls > div {
+  display: flex;
+  justify-content: center;
 }
 
 @keyframes pulse {
