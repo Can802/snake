@@ -158,7 +158,7 @@ body {
 
 h1 {
   font-size: 2.5rem;
-  background: linear-gradient(90deg, #00f5ff, #ff00c8);
+  background: linear-gradient(90deg, #00f5ff, #f00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
