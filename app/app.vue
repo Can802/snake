@@ -18,11 +18,21 @@
         :style="snakeStyle(index)"
       ></div>
 
-      <!-- Food -->
+      <!-- Normales Food -->
       <div class="food" :style="foodStyle"></div>
+
+      <!-- ⭐ Special Food -->
+      <div
+        v-if="specialFood"
+        class="food special"
+        :style="{
+          top: specialFood.y * 20 + 'px',
+          left: specialFood.x * 20 + 'px',
+        }"
+      ></div>
     </div>
 
-    <!-- Mobile Steuerung Buttons -->
+    <!-- 🎮 Mobile Buttons -->
     <div class="controls">
       <button @click="setDirection('up')">⬆️</button>
       <div>
@@ -32,7 +42,7 @@
       </div>
     </div>
 
-    <!-- Game Over Overlay -->
+    <!-- Game Over -->
     <div v-if="gameOver" class="overlay">
       <h2>💀 Game Over</h2>
       <p>Final Score: {{ score }}</p>
@@ -49,11 +59,14 @@ export default {
       snake: [{ x: 7, y: 7 }],
       direction: "right",
       food: { x: 10, y: 10 },
+      specialFood: null,
       score: 0,
+      combo: 0,
+      speed: 120,
+      minSpeed: 60,
       gameOver: false,
       loop: null,
 
-      // Mobile Swipe
       touchStartX: 0,
       touchStartY: 0,
     };
@@ -66,7 +79,15 @@ export default {
         x = Math.floor(Math.random() * this.fieldSize);
         y = Math.floor(Math.random() * this.fieldSize);
       } while (this.snake.some((s) => s.x === x && s.y === y));
+
       this.food = { x, y };
+
+      // ⭐ 20% Chance Special Food
+      if (Math.random() < 0.2) {
+        this.specialFood = { x, y };
+      } else {
+        this.specialFood = null;
+      }
     },
 
     moveSnake() {
@@ -79,6 +100,7 @@ export default {
       if (this.direction === "up") head.y--;
       if (this.direction === "down") head.y++;
 
+      // 💀 Collision
       if (
         head.x < 0 ||
         head.x >= this.fieldSize ||
@@ -93,10 +115,32 @@ export default {
 
       this.snake.push(head);
 
+      // 🍎 Food Check
       if (head.x === this.food.x && head.y === this.food.y) {
-        this.score++;
+        this.combo++;
+        let points = 1 + this.combo;
+
+        // ⭐ Special Bonus
+        if (
+          this.specialFood &&
+          head.x === this.specialFood.x &&
+          head.y === this.specialFood.y
+        ) {
+          points += 5;
+        }
+
+        this.score += points;
+
+        // ⚡ schneller werden
+        if (this.speed > this.minSpeed) {
+          this.speed -= 3;
+          clearInterval(this.loop);
+          this.loop = setInterval(this.moveSnake, this.speed);
+        }
+
         this.spawnFood();
       } else {
+        this.combo = 0;
         this.snake.shift();
       }
     },
@@ -105,11 +149,14 @@ export default {
       this.snake = [{ x: 7, y: 7 }];
       this.direction = "right";
       this.score = 0;
+      this.combo = 0;
+      this.speed = 120;
       this.gameOver = false;
+
       this.spawnFood();
 
       clearInterval(this.loop);
-      this.loop = setInterval(this.moveSnake, 120);
+      this.loop = setInterval(this.moveSnake, this.speed);
     },
 
     handleKey(e) {
@@ -123,13 +170,11 @@ export default {
         this.direction = "right";
     },
 
-    // Touch Start
     handleTouchStart(e) {
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
     },
 
-    // Swipe erkennen
     handleTouchEnd(e) {
       const dx = e.changedTouches[0].clientX - this.touchStartX;
       const dy = e.changedTouches[0].clientY - this.touchStartY;
@@ -144,9 +189,7 @@ export default {
       }
     },
 
-    // Buttons setzen
     setDirection(dir) {
-      // verhindert 180° Wende
       if (
         (dir === "up" && this.direction !== "down") ||
         (dir === "down" && this.direction !== "up") ||
@@ -250,6 +293,12 @@ h1 {
   height: 20px;
 }
 
+.food.special {
+  background: radial-gradient(circle, gold, orange);
+  box-shadow: 0 0 20px gold;
+  animation: pulse 0.2s infinite alternate;
+}
+
 .overlay {
   margin-top: 20px;
   animation: fadeIn 0.5s ease;
@@ -271,13 +320,13 @@ button:hover {
   transform: scale(1.05);
 }
 
-/* Mobile Steuerung Buttons */
 .controls {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 15px;
 }
+
 .controls > div {
   display: flex;
   justify-content: center;
