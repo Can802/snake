@@ -1,0 +1,8 @@
+const app_vue_vue_type_style_index_0_lang = "body{background:radial-gradient(circle at top,#1a1a2e,#090916);color:#fff;font-family:Arial,sans-serif;margin:0}.game{margin-top:30px;text-align:center}h1{background:linear-gradient(90deg,#00f5ff,#ff00c8);-webkit-background-clip:text;font-size:2.5rem;-webkit-text-fill-color:transparent}.score{font-size:1.2rem;opacity:.8}.field{background:linear-gradient(#111 1px,transparent 0),linear-gradient(90deg,#111 1px,transparent 0),#000;background-size:20px 20px;border-radius:12px;box-shadow:0 0 25px #00f5ff44;height:300px;margin:20px auto;overflow:hidden;position:relative;width:300px}.food,.snake-segment{height:20px;position:absolute;width:20px}.overlay{animation:fadeIn .5s ease;margin-top:20px}button{background:linear-gradient(90deg,#00f5ff,#ff00c8);border:none;border-radius:8px;box-shadow:0 0 10px #ff00c8aa;color:#fff;cursor:pointer;font-weight:700;padding:10px 20px}button:hover{transform:scale(1.05)}@keyframes pulse{0%{transform:scale(1)}to{transform:scale(1.3)}}@keyframes fadeIn{0%{opacity:0}to{opacity:1}}";
+
+const appStyles_Cft9iZTz = [
+  app_vue_vue_type_style_index_0_lang
+];
+
+export { appStyles_Cft9iZTz as default };
+//# sourceMappingURL=app-styles.Cft9iZTz.mjs.map
