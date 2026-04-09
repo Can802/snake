@@ -1,10 +1,10 @@
 <template>
-  <div class="game">
+  <div class="game" tabindex="0" @keydown="handleKey">
     <h1>🐍 Color Snake</h1>
-    <p class="score">Score: {{ score }}</p>
-    <p class="highscore">🏆 Highscore: {{ highScore }}</p>
+    <p>Score: {{ score }}</p>
+    <p>🏆 Highscore: {{ highScore }}</p>
+    <p class="lives">❤️ Lives: {{ lives }}</p>
 
-    <!-- Spielfeld -->
     <div
       class="field"
       @touchstart="handleTouchStart"
@@ -19,10 +19,10 @@
         :style="snakeStyle(index)"
       ></div>
 
-      <!-- Normales Food -->
+      <!-- Normal Food -->
       <div class="food" :style="foodStyle"></div>
 
-      <!-- ⭐ Special Food -->
+      <!-- Special Food -->
       <div
         v-if="specialFood"
         class="food special"
@@ -33,7 +33,7 @@
       ></div>
     </div>
 
-    <!-- 🎮 Mobile Buttons -->
+    <!-- Mobile Controls -->
     <div class="controls">
       <button @click="setDirection('up')">⬆️</button>
       <div>
@@ -65,6 +65,7 @@ export default {
       score: 0,
       highScore: 0,
       combo: 0,
+      lives: 3,
       speed: 120,
       minSpeed: 60,
       gameOver: false,
@@ -76,7 +77,6 @@ export default {
 
   methods: {
     spawnFood() {
-      // Normales Food
       let x, y;
       do {
         x = Math.floor(Math.random() * this.fieldSize);
@@ -84,7 +84,7 @@ export default {
       } while (this.snake.some((s) => s.x === x && s.y === y));
       this.food = { x, y };
 
-      // ⭐ 20% Chance Special Food
+      // 20% Chance Special Food
       if (Math.random() < 0.2) {
         let sx, sy;
         do {
@@ -95,9 +95,7 @@ export default {
           (sx === x && sy === y)
         );
         this.specialFood = { x: sx, y: sy };
-      } else {
-        this.specialFood = null;
-      }
+      } else this.specialFood = null;
     },
 
     moveSnake() {
@@ -110,7 +108,7 @@ export default {
       if (this.direction === "up") head.y--;
       if (this.direction === "down") head.y++;
 
-      // 💀 Collision
+      // Collision
       if (
         head.x < 0 ||
         head.x >= this.fieldSize ||
@@ -118,45 +116,47 @@ export default {
         head.y >= this.fieldSize ||
         this.snake.some((s) => s.x === head.x && s.y === head.y)
       ) {
-        this.gameOver = true;
-        clearInterval(this.loop);
-
-        // Highscore speichern
-        if (this.score > this.highScore) {
-          this.highScore = this.score;
-          localStorage.setItem("colorSnakeHighscore", this.highScore);
+        this.lives--;
+        if (this.lives <= 0) {
+          this.gameOver = true;
+          clearInterval(this.loop);
+          if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem("colorSnakeHighscore", this.highScore);
+          }
+          return;
         }
+        // Respawn
+        this.snake = [{ x: 7, y: 7 }];
+        this.direction = "right";
+        this.combo = 0;
         return;
       }
 
       this.snake.push(head);
 
-      // 🍎 Food Check
       let ateFood = false;
       if (head.x === this.food.x && head.y === this.food.y) {
         ateFood = true;
         this.combo++;
-        let points = 1 + this.combo;
-        this.score += points;
+        this.score += 1 + this.combo;
       }
 
-      // ⭐ Special Food Check
       if (
         this.specialFood &&
         head.x === this.specialFood.x &&
         head.y === this.specialFood.y
       ) {
-        this.score += 5; // Bonuspunkte
+        this.score += 5;
         this.specialFood = null;
         ateFood = true;
       }
 
       if (ateFood) {
-        // ⚡ Geschwindigkeit erhöhen
         if (this.speed > this.minSpeed) {
           this.speed -= 3;
           clearInterval(this.loop);
-          this.loop = setInterval(this.moveSnake, this.speed);
+          this.loop = setInterval(() => this.moveSnake(), this.speed);
         }
         this.spawnFood();
       } else {
@@ -171,16 +171,17 @@ export default {
       this.score = 0;
       this.combo = 0;
       this.speed = 120;
+      this.lives = 3;
       this.gameOver = false;
 
-      // Highscore laden
       const savedHighscore = localStorage.getItem("colorSnakeHighscore");
       if (savedHighscore) this.highScore = parseInt(savedHighscore);
 
       this.spawnFood();
 
       clearInterval(this.loop);
-      this.loop = setInterval(this.moveSnake, this.speed);
+      this.loop = setInterval(() => this.moveSnake(), this.speed);
+      this.$el.focus();
     },
 
     handleKey(e) {
@@ -230,10 +231,13 @@ export default {
       return {
         top: segment.y * 20 + "px",
         left: segment.x * 20 + "px",
-        background: `hsl(${hue}, 100%, 60%)`,
-        boxShadow: `0 0 10px hsl(${hue}, 100%, 70%)`,
+        background: `hsl(${hue},100%,60%)`,
+        boxShadow: `0 0 10px hsl(${hue},100%,70%)`,
         borderRadius: "6px",
         transition: "all 0.1s linear",
+        position: "absolute",
+        width: "20px",
+        height: "20px",
       };
     },
   },
@@ -247,18 +251,19 @@ export default {
         background: `radial-gradient(circle, hsl(${hue},100%,70%), hsl(${hue},100%,40%))`,
         boxShadow: `0 0 15px hsl(${hue},100%,60%)`,
         borderRadius: "50%",
+        position: "absolute",
+        width: "20px",
+        height: "20px",
         animation: "pulse 0.4s infinite alternate",
       };
     },
   },
 
   mounted() {
-    window.addEventListener("keydown", this.handleKey);
     this.restart();
   },
 
   beforeUnmount() {
-    window.removeEventListener("keydown", this.handleKey);
     clearInterval(this.loop);
   },
 };
@@ -275,6 +280,7 @@ body {
 .game {
   text-align: center;
   margin-top: 30px;
+  outline: none;
 }
 
 h1 {
@@ -282,12 +288,6 @@ h1 {
   background: linear-gradient(90deg, #00f5ff, #f00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.score,
-.highscore {
-  font-size: 1.2rem;
-  opacity: 0.8;
 }
 
 .field {
@@ -305,22 +305,22 @@ h1 {
   touch-action: none;
 }
 
-.snake-segment {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-}
-
-.food {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-}
-
 .food.special {
   background: radial-gradient(circle, gold, orange);
   box-shadow: 0 0 20px gold;
   animation: pulse 0.2s infinite alternate;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.controls > div {
+  display: flex;
+  justify-content: center;
 }
 
 .overlay {
@@ -338,22 +338,6 @@ button {
   cursor: pointer;
   box-shadow: 0 0 10px #ff00c8aa;
   margin: 5px;
-}
-
-button:hover {
-  transform: scale(1.05);
-}
-
-.controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 15px;
-}
-
-.controls > div {
-  display: flex;
-  justify-content: center;
 }
 
 @keyframes pulse {
